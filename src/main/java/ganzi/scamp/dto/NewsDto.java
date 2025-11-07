@@ -60,10 +60,8 @@ public class NewsDto {
             this.displayDate = days + "일 전";
         } else if (hours > 0) {
             this.displayDate = hours + "시간 전";
-        } else if (minutes > 0) {
-            this.displayDate = minutes + "분 전";
         } else {
-            this.displayDate = "방금 전";
+            this.displayDate = minutes + "분 전";
         }
     }
 }
