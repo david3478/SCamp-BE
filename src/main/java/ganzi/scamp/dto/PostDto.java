@@ -56,18 +56,25 @@ public class PostDto {
             return;
         }
 
-        Duration duration = Duration.between(this.createdAt, LocalDateTime.now());
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            Duration duration = Duration.between(this.createdAt, now);
 
-        long days = duration.toDays();
-        long hours = duration.toHoursPart();
-        long minutes = duration.toMinutesPart();
+            long days = duration.toDays();
+            long hours = duration.toHoursPart();
+            long minutes = duration.toMinutesPart();
 
-        if (days > 0) {
-            this.displayDate = days + "일 전";
-        } else if (hours > 0) {
-            this.displayDate = hours + "시간 전";
-        } else {
-            this.displayDate = minutes + "분 전";
+            if (days > 0) {
+                this.displayDate = days + "일 전";
+            } else if (hours > 0) {
+                this.displayDate = hours + "시간 전";
+            } else {
+                this.displayDate = minutes + "분 전";
+            }
+
+        } catch (Exception e) {
+            // 예외 발생 시 작성 시각을 문자열로 할당
+            this.displayDate = this.createdAt.toString();
         }
     }
 }
