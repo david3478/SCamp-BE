@@ -1,0 +1,73 @@
+package ganzi.scamp.dto;
+
+import ganzi.scamp.entity.Post;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+@Getter
+public class PostDto {
+    // 게시글 고유 ID
+    private Long id;
+
+    // 제목
+    private String title;
+
+    // 내용
+    private String content;
+
+    // 게시글 분류
+    private String category;
+
+    // 작성자 유형
+    private String authorType;
+
+    // 작성자 이름
+    private String authorName;
+
+    // 작성 시각
+    private LocalDateTime createdAt;
+
+    // 가공 시각
+    private String displayDate;
+
+    // 조회수
+    private Integer viewCount;
+
+    public PostDto(Post post) {
+        this.id = post.getId();
+        this.title = post.getTitle();
+        this.content = post.getContent();
+        this.category = post.getCategory().name();
+        this.authorType = post.getAuthorType().name();
+        this.authorName = post.getAuthorName();
+        this.createdAt = post.getCreatedAt();
+        this.viewCount = post.getViewCount();
+
+        calculateDisplayDate();
+    }
+
+    // 가공 시각 계산
+    public void calculateDisplayDate() {
+        if (this.createdAt == null) {
+            this.displayDate = "";
+            return;
+        }
+
+        Duration duration = Duration.between(this.createdAt, LocalDateTime.now());
+
+        long days = duration.toDays();
+        long hours = duration.toHoursPart();
+        long minutes = duration.toMinutesPart();
+
+        if (days > 0) {
+            this.displayDate = days + "일 전";
+        } else if (hours > 0) {
+            this.displayDate = hours + "시간 전";
+        } else {
+            this.displayDate = minutes + "분 전";
+        }
+    }
+}

@@ -45,23 +45,32 @@ public class NewsDto {
 
     // 가공 시간 계산
     public void calculateDisplayDate() {
-        if (this.pubDate == null) return;
+        if (this.pubDate == null || this.pubDate.isBlank()) {
+            this.displayDate = "";
+            return;
+        }
 
-        ZonedDateTime published = ZonedDateTime.parse(this.pubDate, DateTimeFormatter.RFC_1123_DATE_TIME);
-        ZonedDateTime now = ZonedDateTime.now();
+        try {
+            ZonedDateTime published = ZonedDateTime.parse(this.pubDate, DateTimeFormatter.RFC_1123_DATE_TIME);
+            ZonedDateTime now = ZonedDateTime.now();
 
-        Duration duration = Duration.between(published, now);
+            Duration duration = Duration.between(published, now);
 
-        long days = duration.toDays();
-        long hours = duration.toHoursPart();
-        long minutes = duration.toMinutesPart();
+            long days = duration.toDays();
+            long hours = duration.toHoursPart();
+            long minutes = duration.toMinutesPart();
 
-        if (days > 0) {
-            this.displayDate = days + "일 전";
-        } else if (hours > 0) {
-            this.displayDate = hours + "시간 전";
-        } else {
-            this.displayDate = minutes + "분 전";
+            if (days > 0) {
+                this.displayDate = days + "일 전";
+            } else if (hours > 0) {
+                this.displayDate = hours + "시간 전";
+            } else {
+                this.displayDate = minutes + "분 전";
+            }
+
+        } catch (Exception e) {
+            // 날짜 포맷 오류 시 제공 시간 할당
+            this.displayDate = this.pubDate;
         }
     }
 }

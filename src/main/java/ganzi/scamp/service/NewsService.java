@@ -38,39 +38,43 @@ public class NewsService {
     public List<NewsDto> getLatestNews() {
         String query = "사기";
 
-        NewsResponse response = restClient.get()
-                .uri(NAVER_NEWS_URL + "?query={q}&display={d}&sort={s}",
-                        query,
-                        40,
-                        "sim")
-                .header("X-Naver-Client-Id", clientId)
-                .header("X-Naver-Client-Secret", clientSecret)
-                .retrieve()
-                .body(NewsResponse.class);
+        try {
+            NewsResponse response = restClient.get()
+                    .uri(NAVER_NEWS_URL + "?query={q}&display={d}&sort={s}",
+                            query,
+                            40,
+                            "sim")
+                    .header("X-Naver-Client-Id", clientId)
+                    .header("X-Naver-Client-Secret", clientSecret)
+                    .retrieve()
+                    .body(NewsResponse.class);
 
-        if (response == null || response.getItems() == null) {
-            return List.of();
+            if (response == null || response.getItems() == null) {
+                return List.of();
+            }
+
+            // description을 key로 사용하여 중복 제거
+            Map<String, NewsDto> uniqueNewsMap = new LinkedHashMap<>();
+
+            for (NewsDto item : response.getItems()) {
+                uniqueNewsMap.putIfAbsent(item.getDescription(), item);
+            }
+
+            List<NewsDto> uniqueNewsList = new ArrayList<>(uniqueNewsMap.values());
+
+            return uniqueNewsList.stream()
+                    .peek(item -> item.calculateDisplayDate())
+                    // 날짜순으로 내림차순 정렬
+                    .sorted((a, b) -> {
+                        ZonedDateTime dateA = ZonedDateTime.parse(a.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME);
+                        ZonedDateTime dateB = ZonedDateTime.parse(b.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME);
+                        return dateB.compareTo(dateA);
+                    })
+                    // 8개로 제한
+                    .limit(8)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("뉴스 조회 중 오류가 발생했습니다.");
         }
-
-        // description을 key로 사용하여 중복 제거
-        Map<String, NewsDto> uniqueNewsMap = new LinkedHashMap<>();
-
-        for (NewsDto item : response.getItems()) {
-            uniqueNewsMap.putIfAbsent(item.getDescription(), item);
-        }
-
-        List<NewsDto> uniqueNewsList = new ArrayList<>(uniqueNewsMap.values());
-
-        return uniqueNewsList.stream()
-                .peek(item -> item.calculateDisplayDate())
-                // 날짜순으로 내림차순 정렬
-                .sorted((a, b) -> {
-                    ZonedDateTime dateA = ZonedDateTime.parse(a.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME);
-                    ZonedDateTime dateB = ZonedDateTime.parse(b.getPubDate(), DateTimeFormatter.RFC_1123_DATE_TIME);
-                    return dateB.compareTo(dateA);
-                })
-                // 8개로 제한
-                .limit(8)
-                .collect(Collectors.toList());
     }
 }
