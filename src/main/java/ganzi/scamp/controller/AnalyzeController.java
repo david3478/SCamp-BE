@@ -1,7 +1,5 @@
 package ganzi.scamp.controller;
 
-// ⬇️ 새로 만든 DTO 임포트
-
 import ganzi.scamp.service.AiAnalyzeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
