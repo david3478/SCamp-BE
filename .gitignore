@@ -38,6 +38,7 @@ out/
 
 ### .properties ###
 src/main/resources/application.properties
+src/main/resources/application.yml
 
 ### Environment Variables ###
 .env
