@@ -30,17 +30,14 @@ public class UpstageAnalyzeService implements AiAnalyzeService{
         this.userPrompt = userPrompt;
     }
 
-    public int getScore(String inputMessage) {
+    public int getScore(String inputUrl) {
 
-        if (inputMessage == null || inputMessage.isBlank()) {
+        if (inputUrl == null || inputUrl.isBlank()) {
             throw new RuntimeException("URL을 입력해주세요.");
         }
 
-        // 스팸 우회 문자 제거
-        String cleanedMessage = inputMessage.replaceAll("\\u00AD", "");
-
         // 1. Chat 방식 UpstageChatRequestDTO 생성
-        UpstageChatRequest requestDto = createChatRequestDto(cleanedMessage);
+        UpstageChatRequest requestDto = createChatRequestDto(inputUrl);
 
         // 2. RestClient 호출 -> UpstageChatResponse 응답
         UpstageChatResponse responseDto = restClient.post()

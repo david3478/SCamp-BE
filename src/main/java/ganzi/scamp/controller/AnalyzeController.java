@@ -13,7 +13,7 @@ public class AnalyzeController {
     private final AiAnalyzeService aiAnalyzeService;
 
     @PostMapping("/api/analyze")
-    public int getScore(@RequestBody String inputMessage) {
-        return aiAnalyzeService.getScore(inputMessage);
+    public int getScore(@RequestBody String inputUrl) {
+        return aiAnalyzeService.getScore(inputUrl);
     }
 }
