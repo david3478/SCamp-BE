@@ -11,7 +11,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("https://s-camp.vercel.app", "https://api.inwoo.store", "http://localhost:3000")
+                .allowedOrigins("https://s-camp.vercel.app", "https://api.inwoo.store", "http://localhost:5173")
                 .allowedMethods("*")
                 .allowedHeaders("*")
                 .allowCredentials(true)
