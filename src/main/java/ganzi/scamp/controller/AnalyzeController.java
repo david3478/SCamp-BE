@@ -25,6 +25,7 @@ public class AnalyzeController {
         
         - 1차) 공공데이터(피싱데이터 URL)에 존재 : 100 반환  
         - 2차) AI를 통해 URL 위험도를 (0,25,50,75,100) 중 하나로 판단합니다.  
+        - URL 형식이 아닐 시 -> 응답코드 400 "URL 형식에 맞게 입력해주세요." 반환
         """
     )
     public int getScore(@RequestBody String inputUrl) {

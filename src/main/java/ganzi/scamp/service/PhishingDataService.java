@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ public class PhishingDataService {
     @Value("${api.kisa.serviceKey}")
     private String serviceKey;
     @Value("${api.kisa.baseUrl}")
-    private String apiBaseUrl;
+    private List<String> apiBaseUrls;
 
     // 생성자 주입
     public PhishingDataService(PhishingDomainCache cache,
@@ -57,10 +58,17 @@ public class PhishingDataService {
 
     // URL 검증 -> cache에서 비교
     public boolean isPhishingUrl(String inputUrl) {
-        String domain = extractHost(inputUrl);
+        log.info("inputUrl: {}", inputUrl);
+        if(!isValidUrlFormat(inputUrl.trim())) throw new RuntimeException("URL 형식에 맞게 입력해주세요.");
+        String domain = extractHost(inputUrl.trim());
         return cache.contains(domain);
     }
 
+    // URL 형식 검사
+    public boolean isValidUrlFormat(String url) {
+        if (url == null || url.length() > 2048) return false;
+        return url.matches("^(https?://)?(([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}|(\\d{1,3}\\.){3}\\d{1,3})(:\\d+)?(/.*)?$");
+    }
     // 주기적으로 실행 : 공공데이터 -> DB -> Cache 순으로 갱신
     @Scheduled(fixedRateString = "${api.kisa.refreshRate}")
     @Transactional
@@ -97,23 +105,39 @@ public class PhishingDataService {
 
     // 공공데이터를 통해 모든 도메인 정보 가져오기
     private Set<String> fetchAllDomainsFromApi() {
-        Set<String> allDomains = new HashSet<>();
+        Set<String> aggregatedDomains = new HashSet<>();
+
+        // 설정된 모든 URL을 하나씩 돌면서 수집
+        for (String currentBaseUrl : apiBaseUrls) {
+            log.info("데이터 수집 시작: {}", currentBaseUrl);
+            Set<String> domainsFromUrl = fetchDomainsFromSpecificUrl(currentBaseUrl);
+            aggregatedDomains.addAll(domainsFromUrl);
+            log.info("데이터 수집 완료: {} (수집된 개수: {})", currentBaseUrl, domainsFromUrl.size());
+        }
+
+        return aggregatedDomains;
+    }
+
+    // 공공데이터 url은 현재 2개 존재 -> 각 url마다 api 요청 보내기
+    private Set<String> fetchDomainsFromSpecificUrl(String baseUrl) {
+        Set<String> collectedDomains = new HashSet<>();
         int page = 1;
         int totalCount = 0;
         int perPage = 1000;
         boolean hasMoreData = true;
 
         while (hasMoreData) {
-            KisaApiResponse response = fetchPage(page, perPage); // 이전의 RestClient 호출 메서드
+            // fetchPage 호출 시 baseUrl을 넘겨줌
+            KisaApiResponse response = fetchPage(baseUrl, page, perPage);
 
             if (response == null || response.getData() == null) {
-                log.error("API 데이터 수집 실패. Page: {}", page);
+                log.error("API 응답 실패 또는 데이터 없음 - URL: {}, Page: {}", baseUrl, page);
                 break;
             }
 
             if (page == 1) {
                 totalCount = response.getTotalCount();
-                if(totalCount == 0) break;
+                if (totalCount == 0) break;
             }
 
             Set<String> pageDomains = response.getData().stream()
@@ -121,7 +145,7 @@ public class PhishingDataService {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
-            allDomains.addAll(pageDomains);
+            collectedDomains.addAll(pageDomains);
 
             if (page * perPage >= totalCount) {
                 hasMoreData = false;
@@ -129,14 +153,13 @@ public class PhishingDataService {
                 page++;
             }
         }
-        return allDomains;
+        return collectedDomains;
     }
 
-    // kisa api 요청 (몇 페이지를 얼마나 가져올 것인지)
-    private KisaApiResponse fetchPage(int page, int perPage) {
+    // 실제 요청 형식을 만드는 부분
+    private KisaApiResponse fetchPage(String baseUrl, int page, int perPage) {
         try {
-            // 1. URL과 쿼리 파라미터를 조합하여 URI 객체 생성
-            URI uri = UriComponentsBuilder.fromHttpUrl(this.apiBaseUrl) // application.properties의 긴 URL 사용
+            URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl) // 파라미터로 받은 URL 사용
                     .queryParam("serviceKey", this.serviceKey)
                     .queryParam("page", page)
                     .queryParam("perPage", perPage)
@@ -144,14 +167,13 @@ public class PhishingDataService {
                     .build()
                     .toUri();
 
-            // 2. 생성된 URI로 요청 전송
             return restClient.get()
                     .uri(uri)
                     .retrieve()
                     .body(KisaApiResponse.class);
 
         } catch (Exception e) {
-            log.error("API 호출 중 오류 발생 - Page {}: {}", page, e.getMessage());
+            log.error("API 호출 중 오류 발생 - URL: {}, Page: {}, Error: {}", baseUrl, page, e.getMessage());
             return null;
         }
     }
@@ -174,7 +196,8 @@ public class PhishingDataService {
             String host = uri.getHost();
             if (host != null) {
                 // "www." 접두사 제거
-                return host.startsWith("www.") ? host.substring(4) : host;
+                String cleanHost = host.startsWith("www.") ? host.substring(4) : host;
+                return cleanHost.trim().toLowerCase();
             }
             return null;
         } catch (URISyntaxException e) {
