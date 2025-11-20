@@ -1,5 +1,6 @@
 package ganzi.scamp.controller;
 
+import ganzi.scamp.dto.AnalyzeRequestDto;
 import ganzi.scamp.service.AiAnalyzeService;
 import ganzi.scamp.service.PhishingDataService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,8 +29,8 @@ public class AnalyzeController {
         - URL 형식이 아닐 시 -> 응답코드 400 "URL 형식에 맞게 입력해주세요." 반환
         """
     )
-    public int getScore(@RequestBody String inputUrl) {
-        if(phishingDataService.isPhishingUrl(inputUrl)) return 100;
-        return aiAnalyzeService.getScore(inputUrl);
+    public int getScore(@RequestBody AnalyzeRequestDto requestDto) {
+        if(phishingDataService.isPhishingUrl(requestDto.getText())) return 100;
+        return aiAnalyzeService.getScore(requestDto.getText());
     }
 }
