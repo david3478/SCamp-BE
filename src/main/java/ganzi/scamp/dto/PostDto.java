@@ -40,7 +40,7 @@ public class PostDto {
         this.id = post.getId();
         this.title = post.getTitle();
         this.content = post.getContent();
-        this.category = post.getCategory().name();
+        this.category = convertCategory(post.getCategory().name());
         this.authorType = post.getAuthorType().name();
         this.authorName = post.getAuthorName();
         this.createdAt = post.getCreatedAt();
@@ -76,5 +76,18 @@ public class PostDto {
             // 예외 발생 시 작성 시각을 문자열로 할당
             this.displayDate = this.createdAt.toString();
         }
+    }
+
+    // 카테고리를 한글로 가공
+    private String convertCategory(String category) {
+        return switch (category) {
+            case "ALL" -> "전체";
+            case "NOTICE" -> "공지사항";
+            case "PREVENTION" -> "예방수칙";
+            case "CASE" -> "사례공유";
+
+            // 예외 처리
+            default -> category;
+        };
     }
 }
